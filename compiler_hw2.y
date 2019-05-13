@@ -213,7 +213,7 @@ stat
 /*print_func*/
 print_stat
     :PRINT LB ID RB SEMICOLON
-    |PRINT LB STR_CONST RB SEMICOLON {printf("88");}
+    |PRINT LB STR_CONST RB SEMICOLON    {printf("////%s////",$3);}
 ;
 
 expression_stat
@@ -318,8 +318,8 @@ primary_expression
 ;
 
 constant
-    : I_CONST
-    | F_CONST    
+    : I_CONST    {printf("////%d////",$1);}
+    | F_CONST    {printf("////%g////",$1);}
 ;
 
 selection_stat
@@ -348,7 +348,7 @@ function_para
 /* C code section */
 int main(int argc, char** argv)
 {
-    yylineno = 0;
+    yylineno = 1;
     printf("1: ");
     yyparse();
 	printf("\nTotal lines: %d \n",yylineno);
