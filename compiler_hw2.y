@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 extern int yylineno;
 extern int yylex();
@@ -14,13 +15,21 @@ int lookup_symbol();
 void create_symbol();
 void insert_symbol();
 void dump_symbol();
+void test(char *type,char *name);
 
 typedef struct{
-	char *id;
+	int Index;
+	char *Name;
+	char *kind;
 	char *type;
-	double data;
+	int Scope;
+	char Attribute[50][50];
+	int AttriCount;
 } Table;
-Table table[100];
+Table global[50];
+int globalCount = 0;
+Table table[50];
+int tableCount = 0;
 
 %}
 
@@ -75,6 +84,13 @@ Table table[100];
 %type <string> VOID
 %type <string> ID
 
+%type <string> type_specifier
+%type <string> declaration_specifiers
+%type <string> init_declarator_list
+%type <string> init_declarator
+%type <string> declarator
+%type <string> direct_declarator
+
 /* Yacc will start at this nonterminal */
 %start program
 
@@ -88,57 +104,58 @@ program
 
 external_declaration
     : function_definition {printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
-    | declaration 
+    | declaration {printf("\nccccccccccccccccccccc");} 
 ;
 
 function_definition
-	: declaration_specifiers declarator declaration_list compound_stat
-	| declaration_specifiers declarator compound_stat
-    | declarator declaration_list compound_stat
+	: declaration_specifiers declarator declaration_list compound_stat	
+	| declaration_specifiers declarator compound_stat	{/*"function end"*/;}
+    	| declarator declaration_list compound_stat
 	| declarator compound_stat
 ;
 
 declaration
 	: declaration_specifiers SEMICOLON
-	| declaration_specifiers init_declarator_list SEMICOLON
+	| declaration_specifiers init_declarator_list SEMICOLON {test($1,$2);}
 	;
 
 declaration_specifiers
-	: type_specifier
-	| type_specifier declaration_specifiers
+	: type_specifier  {$$ = $1; printf("||  %s  ||",$1);}
+      /*| type_specifier declaration_specifiers {printf("bb%sbb",$1);}*/
+	/* multiple type? */
 	;
 
 
 
 init_declarator_list
-	: init_declarator
-	| init_declarator_list COMMA init_declarator
+	: init_declarator { $$ = $1; }
+	| init_declarator_list COMMA init_declarator 
 	;
 
 init_declarator
-	: declarator
-	| declarator ASGN initializer
+	: declarator { $$ = $1; }
+	| declarator ASGN initializer { $$ = $1; }
 	;
 
 declarator
-	: direct_declarator
+	: direct_declarator { $$ =$1; }
 	;
 
 direct_declarator
-	: ID
-	| LB declarator RB
-	| direct_declarator LB parameter_list RB
-	| direct_declarator LB RB
-	| direct_declarator LB identifier_list RB
+	: ID { $$ = strdup(yytext); }
+	| LB declarator RB 
+	| direct_declarator LB parameter_list RB {/*printf("function with NO attribute");*/}
+	| direct_declarator LB RB {/*printf("function with attribute");*/}
+	| direct_declarator LB identifier_list RB 
 	;
 
 parameter_list
-	: parameter_declaration
-	| parameter_list COMMA parameter_declaration
+	: parameter_declaration {/*printf("123");*/}
+	| parameter_list COMMA parameter_declaration {/*printf("para end");*/}
 	;
 
 parameter_declaration
-	: declaration_specifiers declarator
+	: declaration_specifiers declarator {/*printf("this");*/}
 	| declaration_specifiers
 	;
 
@@ -149,13 +166,13 @@ identifier_list
 
 initializer_list
 	: initializer
-	| initializer_list COMMA initializer
+	| initializer_list COMMA initializer 
 	;
 
 initializer
 	: assignment_expression
 	| LCB initializer_list RCB
-	| LCB initializer_list COMMA RCB
+	| LCB initializer_list COMMA RCB 
 	;
 
 
@@ -169,18 +186,18 @@ declaration_list
 /* actions can be taken when meet the token or rule */
 
 type_specifier
-	: VOID
-    | INT
-    | FLOAT
-	| STRING
-	| BOOL
+	: VOID   {$$ = "void";}
+	| INT	 {$$ = "int";}
+	| FLOAT  {$$ = "float";}
+	| STRING {$$ = "string";}
+	| BOOL   {$$ = "bool";}
 	;
 
 /*compound_stat*/
 compound_stat
-    : LCB RCB
+    	: LCB RCB
 	| LCB  block_item_list RCB
-;
+	;
 
 block_item_list
     : block_item_list block_item
@@ -213,7 +230,7 @@ stat
 /*print_func*/
 print_stat
     :PRINT LB ID RB SEMICOLON
-    |PRINT LB STR_CONST RB SEMICOLON    {printf("////%s////",$3);}
+    |PRINT LB STR_CONST RB SEMICOLON    
 ;
 
 expression_stat
@@ -318,8 +335,8 @@ primary_expression
 ;
 
 constant
-    : I_CONST    {printf("////%d////",$1);}
-    | F_CONST    {printf("////%g////",$1);}
+    : I_CONST    
+    | F_CONST    
 ;
 
 selection_stat
@@ -364,10 +381,16 @@ void yyerror(char *s)
     printf("\n|-----------------------------------------------|\n\n");
 }
 
-void create_symbol() {}
-void insert_symbol() {}
+void create_symbol() {
+	tableCount = 0;	
+}
+void insert_symbol(int index,char *name,char *kind,char *type,int scope) {}
 int lookup_symbol() {}
 void dump_symbol() {
     printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
+}
+
+void test(char *type,char *name){
+	printf("\n%s   :   %s\n",type,name);
 }

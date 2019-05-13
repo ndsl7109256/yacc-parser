@@ -95,7 +95,7 @@ id			{letter}+({letter}|{digit})*
  /* String Constant */
 \"				        { printf("%s",yytext); BEGIN STRING_STATE; }
 <STRING_STATE>\"		{ printf("%s",yytext); BEGIN INITIAL; }
-<STRING_STATE>[^"]*		{ printf("777%s7777",yytext); yylval.string=yytext; return STR_CONST; }
+<STRING_STATE>[^"]*		{ printf("%s",yytext); yylval.string=yytext; return STR_CONST; }
 
  /* Number Constant */
 {integer}	{ yylval.i_val = atoi(yytext); printf("%d",atoi(yytext)); return I_CONST; }
