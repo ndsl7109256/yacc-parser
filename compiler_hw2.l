@@ -33,7 +33,7 @@ id			{letter}+({letter}|{digit})*
 "-" 	{ printf("-");return SUB; }
 "*" 	{ printf("*");return MUL; }
 "/" 	{ printf("/");return DIV; }
-"%"     { printf("%");return MOD; }
+"%"     { printf("%s",yytext);return MOD; }
 "++"    { printf("++");return INC; }
 "--"    { printf("--");return DEC; }
 

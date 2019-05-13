@@ -15,16 +15,17 @@ int lookup_symbol();
 void create_symbol();
 void insert_symbol();
 void dump_symbol();
-void test(char *type,char *name,int scope,char *kind);
+void dump_global();
+void test(char *type,char *name,int scope,char *kind,char *attribute);
+
 
 typedef struct{
 	int Index;
 	char *Name;
-	char *kind;
-	char *type;
+	char *Kind;
+	char *Type;
 	int Scope;
-	char Attribute[50][50];
-	int AttriCount;
+	char *Attribute;
 } Table;
 Table global[50];
 int globalCount = 0;
@@ -33,6 +34,10 @@ int tableCount = 0;
 int scope = 0;
 
 int variableFlag = 1;
+
+char att[256][256] ;
+int functionCount = 0;
+
 %}
 
 /* Use variable or self-defined structure to represent
@@ -105,13 +110,17 @@ program
 ;
 
 external_declaration
-    : function_definition { scope = 0; printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
-    | declaration {printf("\nccccccccccccccccccccc");} 
+    : function_definition { scope = 0;  printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
+    | declaration { scope = 0; printf("\nccccccccccccccccccccc");} 
 ;
 
 function_definition
 	: declaration_specifiers declarator declaration_list compound_stat	
-	| declaration_specifiers declarator compound_stat	{/*"function end"*/;}
+	| declaration_specifiers declarator compound_stat	{
+	
+	insert_global($2,"function",$1,scope,att[functionCount]);
+	
+	/*"function end"*/;}
     	| declarator declaration_list compound_stat
 	| declarator compound_stat
 ;
@@ -119,10 +128,15 @@ function_definition
 declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
-	if(variableFlag)
-		test($1,$2,scope,"variable");
-	else
-		test($1,$2,scope,"parameter");}
+	if(variableFlag){
+		test($1,$2,scope,"variable","");
+		if(scope == 0)
+			insert_global($2,"variable",$1,scope,att[functionCount]);
+	}
+	else{
+		test($1,$2,scope,"parameter","");}
+	
+	}
 	;
 
 declaration_specifiers
@@ -171,10 +185,24 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator {
-			if(variableFlag)		
-				test($1,$2,scope,"variable");
-			else
-				test($1,$2,scope,"parameter");}
+			if(variableFlag)
+			{		
+				test($1,$2,scope,"variable","");
+			}
+			else{
+				test($1,$2,scope,"parameter","");
+				if(att[functionCount][0] == '\0')
+				{
+					strcpy(att[functionCount],$1);
+					printf("\n\n%s\n\n",att[functionCount]);
+				}
+				else{
+					strcat(att[functionCount],", ");
+					strcat(att[functionCount],$1);
+					printf("\n\n%s\n\n",att[functionCount]);
+				}
+			}
+					    }
 	| declaration_specifiers
 	;
 
@@ -392,11 +420,12 @@ function_para
 /* C code section */
 int main(int argc, char** argv)
 {
+    memset(att,'\0',sizeof(att));
     yylineno = 1;
     printf("1: ");
     yyparse();
-	printf("\nTotal lines: %d \n",yylineno);
-
+    printf("\nTotal lines: %d \n",yylineno);
+    dump_global();
     return 0;
 }
 
@@ -411,13 +440,37 @@ void yyerror(char *s)
 void create_symbol() {
 	tableCount = 0;	
 }
-void insert_symbol(int index,char *name,char *kind,char *type,int scope) {}
+void insert_symbol(char *name,char *kind,char *type,int scope,char *attribute) {
+
+}
+void insert_global(char *name,char *kind,char *type,int scope,char *attribute) {
+	global[functionCount].Name=strdup(name);
+	global[functionCount].Kind=strdup(kind); 
+	global[functionCount].Type=strdup(type);
+	global[functionCount].Scope = scope;
+	global[functionCount].Attribute=strdup(attribute);
+	global[functionCount].Index = functionCount;
+	functionCount++;
+}
+
 int lookup_symbol() {}
 void dump_symbol() {
     printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
 }
 
-void test(char *type,char *name,int scope,char *kind){
+void dump_global() {
+    printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
+           "Index", "Name", "Kind", "Type", "Scope", "Attribute");
+	for(int i = 0;i<functionCount;i++)
+	{		
+	    printf("\n%-10d%-10s%-12s%-10s%-10d%-10s\n\n",
+           i,global[i].Name,global[i].Kind,global[i].Type, global[i].Scope, global[i].Attribute);
+
+	}
+}
+
+
+void test(char *type,char *name,int scope,char *kind,char *attribute){
 	printf("\n%s   :   %s     %d  %s\n   ",type,name,scope,kind);
 }
