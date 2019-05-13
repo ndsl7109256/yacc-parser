@@ -15,7 +15,7 @@ int lookup_symbol();
 void create_symbol();
 void insert_symbol();
 void dump_symbol();
-void test(char *type,char *name);
+void test(char *type,char *name,int scope);
 
 typedef struct{
 	int Index;
@@ -30,7 +30,7 @@ Table global[50];
 int globalCount = 0;
 Table table[50];
 int tableCount = 0;
-
+int scope = 0;
 %}
 
 /* Use variable or self-defined structure to represent
@@ -103,7 +103,7 @@ program
 ;
 
 external_declaration
-    : function_definition {printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
+    : function_definition { scope = 0; printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
     | declaration {printf("\nccccccccccccccccccccc");} 
 ;
 
@@ -116,7 +116,7 @@ function_definition
 
 declaration
 	: declaration_specifiers SEMICOLON
-	| declaration_specifiers init_declarator_list SEMICOLON {test($1,$2);}
+	| declaration_specifiers init_declarator_list SEMICOLON {test($1,$2,scope);}
 	;
 
 declaration_specifiers
@@ -195,8 +195,8 @@ type_specifier
 
 /*compound_stat*/
 compound_stat
-    	: LCB RCB
-	| LCB  block_item_list RCB
+    	: LCB RCB {++scope;}
+	| LCB  block_item_list RCB {++scope;}
 	;
 
 block_item_list
@@ -391,6 +391,6 @@ void dump_symbol() {
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
 }
 
-void test(char *type,char *name){
-	printf("\n%s   :   %s\n",type,name);
+void test(char *type,char *name,int scope){
+	printf("\n%s   :   %s     %d\n   ",type,name,scope);
 }
