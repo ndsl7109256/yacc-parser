@@ -15,7 +15,7 @@ int lookup_symbol();
 void create_symbol();
 void insert_symbol();
 void dump_symbol();
-void test(char *type,char *name,int scope);
+void test(char *type,char *name,int scope,char *kind);
 
 typedef struct{
 	int Index;
@@ -31,6 +31,8 @@ int globalCount = 0;
 Table table[50];
 int tableCount = 0;
 int scope = 0;
+
+int variableFlag = 1;
 %}
 
 /* Use variable or self-defined structure to represent
@@ -116,7 +118,11 @@ function_definition
 
 declaration
 	: declaration_specifiers SEMICOLON
-	| declaration_specifiers init_declarator_list SEMICOLON {test($1,$2,scope);}
+	| declaration_specifiers init_declarator_list SEMICOLON {
+	if(variableFlag)
+		test($1,$2,scope,"variable");
+	else
+		test($1,$2,scope,"parameter");}
 	;
 
 declaration_specifiers
@@ -144,10 +150,19 @@ declarator
 direct_declarator
 	: ID { $$ = strdup(yytext); }
 	| LB declarator RB 
-	| direct_declarator LB parameter_list RB {/*printf("function with NO attribute");*/}
+	| direct_declarator HI parameter_list BYE {/*printf("function with NO attribute");*/}
 	| direct_declarator LB RB {/*printf("function with attribute");*/}
 	| direct_declarator LB identifier_list RB 
 	;
+
+HI
+	:LB {variableFlag = 0;++scope;printf("hi");}
+;
+
+BYE
+	:RB {variableFlag = 1;--scope;printf("bye");}
+;
+
 
 parameter_list
 	: parameter_declaration {/*printf("123");*/}
@@ -155,7 +170,11 @@ parameter_list
 	;
 
 parameter_declaration
-	: declaration_specifiers declarator {/*printf("this");*/}
+	: declaration_specifiers declarator {
+			if(variableFlag)		
+				test($1,$2,scope,"variable");
+			else
+				test($1,$2,scope,"parameter");}
 	| declaration_specifiers
 	;
 
@@ -195,9 +214,17 @@ type_specifier
 
 /*compound_stat*/
 compound_stat
-    	: LCB RCB {++scope;}
-	| LCB  block_item_list RCB {++scope;}
+    	: LCB RCB {}
+	| HICB  block_item_list BYECB {}
 	;
+
+HICB:
+    LCB {++scope;}
+;
+
+BYECB:
+    RCB {--scope;}
+;
 
 block_item_list
     : block_item_list block_item
@@ -391,6 +418,6 @@ void dump_symbol() {
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
 }
 
-void test(char *type,char *name,int scope){
-	printf("\n%s   :   %s     %d\n   ",type,name,scope);
+void test(char *type,char *name,int scope,char *kind){
+	printf("\n%s   :   %s     %d  %s\n   ",type,name,scope,kind);
 }

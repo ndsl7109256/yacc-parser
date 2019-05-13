@@ -118,7 +118,7 @@ id			{letter}+({letter}|{digit})*
 
 [;]         { printf(";"); return SEMICOLON; }
 [\n]        { printf("\n%d: ",yylineno); }
-[ \t]		{printf(" ");} /* Ignore */
+[ \t]		{printf("%s",yytext);} /* Ignore */
 [^ \t\n] 	{} /* Ignore other charactor sets */
 <<EOF>>     { yyterminate();}
 
