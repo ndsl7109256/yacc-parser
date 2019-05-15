@@ -128,7 +128,9 @@ function_definition
 declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
+		printf("declaDEFINE\n");
 	if(variableFlag){
+		
 		//test($1,$2,scope,"variable","");
 		if(scope == 0)
 			insert_global($2,"variable",$1,scope,att[functionCount]);
@@ -189,6 +191,7 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator {
+			printf("para DEFINE\n");
 			if(variableFlag)
 			{		
 				//test($1,$2,scope,"variable","");
@@ -249,7 +252,7 @@ type_specifier
 /*compound_stat*/
 compound_stat
     	: LCB RCB {}
-	| HICB  block_item_list BYECB {}
+	| HICB  block_item_list BYECB {dump_symbol();--scope;}
 	;
 
 HICB:
@@ -257,7 +260,7 @@ HICB:
 ;
 
 BYECB:
-    RCB {dump_symbol();--scope;}
+    RCB {}
 ;
 
 block_item_list
@@ -277,12 +280,12 @@ declaration
 
 stat
     : print_stat
-    | expression_stat
+    | expression_stat 
     | selection_stat
     | iteration_stat
     | compound_stat
     | jump_stat
-    | function_stat
+   /* | function_stat*/
 ;
 /*expression_stat*/
 
@@ -305,8 +308,8 @@ expression
 ;
 
 assignment_expression
-    : conditional_expression
-    | unary_expression assignment_operator assignment_expression
+    : conditional_expression {printf("aa\n");}
+    | unary_expression assignment_operator assignment_expression {printf("bb\n");}
 ;
 
 conditional_expression
@@ -382,12 +385,20 @@ unary_operator
 
 postfix_expression
     : primary_expression
+    | postfix_expression LB RB
+    | postfix_expression LB argv_expression_list RB
     | postfix_expression INC
     | postfix_expression DEC
 ;
 
+argv_expression_list 
+    : assignment_expression
+    | argv_expression_list COMMA assignment_expression
+;
+
+
 primary_expression
-    : ID
+    : ID {printf("USE VARIABLE");}
     | constant
     | TRUE
     | FALSE
