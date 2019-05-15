@@ -129,18 +129,22 @@ declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
 	if(variableFlag){
-		test($1,$2,scope,"variable","");
+		//test($1,$2,scope,"variable","");
 		if(scope == 0)
 			insert_global($2,"variable",$1,scope,att[functionCount]);
+		else
+			insert_symbol($2,"variable",$1,scope,"");
 	}
 	else{
-		test($1,$2,scope,"parameter","");}
+		//test($1,$2,scope,"parameter","");
+		insert_symbol($2,"parameter",$1,scope,"");
+	}
 	
 	}
 	;
 
 declaration_specifiers
-	: type_specifier  {$$ = $1; printf("||  %s  ||",$1);}
+	: type_specifier  {$$ = $1; /*printf("||  %s  ||",$1);*/}
       /*| type_specifier declaration_specifiers {printf("bb%sbb",$1);}*/
 	/* multiple type? */
 	;
@@ -187,19 +191,21 @@ parameter_declaration
 	: declaration_specifiers declarator {
 			if(variableFlag)
 			{		
-				test($1,$2,scope,"variable","");
+				//test($1,$2,scope,"variable","");
+				insert_symbol($2,"variable",$1,scope,"");
 			}
 			else{
-				test($1,$2,scope,"parameter","");
+				//test($1,$2,scope,"parameter","");
+				insert_symbol($2,"parameter",$1,scope,"");
 				if(att[functionCount][0] == '\0')
 				{
 					strcpy(att[functionCount],$1);
-					printf("\n\n%s\n\n",att[functionCount]);
+					/*printf("\n\n%s\n\n",att[functionCount]);*/
 				}
 				else{
 					strcat(att[functionCount],", ");
 					strcat(att[functionCount],$1);
-					printf("\n\n%s\n\n",att[functionCount]);
+					/*printf("\n\n%s\n\n",att[functionCount]);*/
 				}
 			}
 					    }
@@ -251,7 +257,7 @@ HICB:
 ;
 
 BYECB:
-    RCB {--scope;}
+    RCB {dump_symbol();--scope;}
 ;
 
 block_item_list
@@ -426,6 +432,18 @@ int main(int argc, char** argv)
     yyparse();
     printf("\nTotal lines: %d \n",yylineno);
     dump_global();
+
+
+
+
+   for(int i = 0;i<tableCount;i++)
+    {
+                printf("\n%-10d%-10s%-12s%-10s%-10d%-10s\n\n",
+                i,table[i].Name,table[i].Kind,table[i].Type, table[i].Scope,"");
+    }
+
+
+
     return 0;
 }
 
@@ -441,6 +459,13 @@ void create_symbol() {
 	tableCount = 0;	
 }
 void insert_symbol(char *name,char *kind,char *type,int scope,char *attribute) {
+	table[tableCount].Name=strdup(name);
+        table[tableCount].Kind=strdup(kind);
+        table[tableCount].Type=strdup(type);
+        table[tableCount].Scope = scope;
+        table[tableCount].Attribute=strdup(attribute);
+        table[tableCount].Index = tableCount;
+        tableCount++;
 
 }
 void insert_global(char *name,char *kind,char *type,int scope,char *attribute) {
@@ -455,8 +480,28 @@ void insert_global(char *name,char *kind,char *type,int scope,char *attribute) {
 
 int lookup_symbol() {}
 void dump_symbol() {
-    printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
+
+    for(int i = 0;i<tableCount;i++){
+        if(table[i].Scope == scope)
+	{
+        printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
+    
+        break;
+	}
+    }
+    int to_decrease = 0;
+    for(int i = 0;i<tableCount;i++)
+    {
+	    if(table[i].Scope == scope){
+                printf("%-10d%-10s%-12s%-10s%-10d%-10s\n",
+                to_decrease,table[i].Name,table[i].Kind,table[i].Type, table[i].Scope,"");
+	        memset(&(table[i]),'\0',sizeof(table[i]));
+	        ++to_decrease;
+	    }
+    }
+    tableCount = tableCount-to_decrease;
+
 }
 
 void dump_global() {
@@ -464,7 +509,7 @@ void dump_global() {
            "Index", "Name", "Kind", "Type", "Scope", "Attribute");
 	for(int i = 0;i<functionCount;i++)
 	{		
-	    printf("\n%-10d%-10s%-12s%-10s%-10d%-10s\n\n",
+	    printf("%-10d%-10s%-12s%-10s%-10d%-10s\n",
            i,global[i].Name,global[i].Kind,global[i].Type, global[i].Scope, global[i].Attribute);
 
 	}
