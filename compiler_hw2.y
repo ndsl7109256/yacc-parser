@@ -436,11 +436,11 @@ int main(int argc, char** argv)
 
 
 
-   for(int i = 0;i<tableCount;i++)
+   /*for(int i = 0;i<tableCount;i++)
     {
                 printf("\n%-10d%-10s%-12s%-10s%-10d%-10s\n\n",
                 i,table[i].Name,table[i].Kind,table[i].Type, table[i].Scope,"");
-    }
+    }*/
 
 
 
