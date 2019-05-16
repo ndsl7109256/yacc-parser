@@ -11,6 +11,7 @@ extern char* yytext;   // Get current token from lex
 extern char buf[256];  // Get current code line from lex
 
 /* Symbol table function - you can add new function if needed. */
+int lookup_function();
 int lookup_symbol();
 void create_symbol();
 void insert_symbol();
@@ -39,7 +40,7 @@ char att[256][256] ;
 int functionCount = 0;
 int sema_flag;
 
-char *last_id;
+char last_id[512];
 %}
 
 /* Use variable or self-defined structure to represent
@@ -130,7 +131,7 @@ function_definition
 declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
-		printf("declaDEFINE\n");
+		/*printf("declaDEFINE\n");*/
 	if(yysema(sema_flag))
 	if(variableFlag){
 		
@@ -179,11 +180,11 @@ direct_declarator
 	;
 
 HI
-	:LB {variableFlag = 0;++scope;printf("hi");}
+	:LB {variableFlag = 0;++scope;/*printf("hi");*/}
 ;
 
 BYE
-	:RB {variableFlag = 1;--scope;printf("bye");}
+	:RB {variableFlag = 1;--scope;/*printf("bye");*/}
 ;
 
 
@@ -194,17 +195,15 @@ parameter_list
 
 parameter_declaration
 	: declaration_specifiers declarator {
-			printf("para DEFINE\n");
-			if(variableFlag)
-			{		
+			/*printf("para DEFINE\n");*/
+			if(variableFlag){		
 				//test($1,$2,scope,"variable","");
 				insert_symbol($2,"variable",$1,scope,"");
 			}
 			else{
 				//test($1,$2,scope,"parameter","");
 				insert_symbol($2,"parameter",$1,scope,"");
-				if(att[functionCount][0] == '\0')
-				{
+				if(att[functionCount][0] == '\0'){
 					strcpy(att[functionCount],$1);
 					/*printf("\n\n%s\n\n",att[functionCount]);*/
 				}
@@ -255,7 +254,7 @@ type_specifier
 /*compound_stat*/
 compound_stat
     	: LCB RCB {}
-	| HICB  block_item_list BYECB {dump_symbol();--scope;}
+	| HICB  block_item_list BYECB {}
 	;
 
 HICB:
@@ -263,7 +262,7 @@ HICB:
 ;
 
 BYECB:
-    RCB {}
+    RCB {dump_symbol();--scope;}
 ;
 
 block_item_list
@@ -283,7 +282,7 @@ declaration
 
 stat
     : print_stat{yysema(sema_flag);}
-    | expression_stat {yysema(sema_flag);}
+    | expression_stat {printf("\nfunction\n");yysema(sema_flag);}
     | selection_stat {yysema(sema_flag);}
     | iteration_stat {yysema(sema_flag);}
     | compound_stat {yysema(sema_flag);}
@@ -296,12 +295,12 @@ stat
 
 /*print_func*/
 print_stat
-    :PRINT LB USE RB SEMICOLON
+    :PRINT LB PUSE RB SEMICOLON
     |PRINT LB COMMA STR_CONST COMMA RB SEMICOLON    
 ;
 
-USE
-    : ID { sema_flag=lookup_symbol(strdup(yytext),1);}
+PUSE
+    : ID { sema_flag=lookup_symbol(strdup(yytext),1);/*"print ID"*/}
 ;
 expression_stat
     : COMMA
@@ -404,7 +403,7 @@ argv_expression_list
 
 
 primary_expression
-    : ID { lookup_symbol(strdup(yytext),1);printf("USE VARIABLE");}
+    : ID {sema_flag = lookup_symbol(strdup(yytext),1); sema_flag=lookup_function(strdup(yytext),1);/*printf("USE VARIABLE%s",last_id);*/}
     | constant
     | TRUE
     | FALSE
@@ -464,6 +463,7 @@ int main(int argc, char** argv)
 
 void yyerror(char *s)
 {
+    yysema(sema_flag);
     printf("\n|-----------------------------------------------|\n");
     printf("| Error found in line %d: %s\n", yylineno, buf);
     printf("| %s", s);
@@ -493,29 +493,63 @@ void insert_global(char *name,char *kind,char *type,int scope,char *attribute) {
 	functionCount++;
 }
 
+int lookup_function(char *name,int use){
+	int error_flag = 0;//right
+        if(use){
+                for(int i = 0;i < functionCount;i++){
+                        if(strcmp(name,global[i].Name)==0)
+                                return error_flag = sema_flag;
+                }
+		for(int i = 0;i <tableCount;i++){
+			if(strcmp(name,table[i].Name)==0)
+				return error_flag = sema_flag;
+		}
+		strcpy(last_id,name);
+                return error_flag = 2;//undeclared function
+        }else{
+		for(int i = 0;i < functionCount;i++){
+                        if(strcmp(name,global[i].Name)==0 && global[i].Scope == scope)
+                        {      
+			strcpy(last_id,name);  
+			return error_flag = 4;//redeclared function
+                	  
+			}
+		}
+                return error_flag = 0;
+
+
+	}
+}
+
 int lookup_symbol(char *name,int use) {
 	int error_flag = 0;//right
-	last_id = strdup(name);
 	if(use){
 		for(int i = 0;i < functionCount;i++){
 			if(strcmp(name,global[i].Name)==0)
-				return error_flag = 0;
+				return error_flag = sema_flag;
 		}
 		for(int i = 0;i < tableCount;i++){
 			if(strcmp(name,table[i].Name)==0)
-				return error_flag = 0;
+				return error_flag = sema_flag;
 		}
+		strcpy(last_id,name);
 		return error_flag = 1;//undeclared variable
 	}else{
 		for(int i = 0;i < functionCount;i++){
                         if(strcmp(name,global[i].Name)==0 && global[i].Scope == scope)
-                                return error_flag = 3;//redeclared variable
-                }
+                	{                
+				strcpy(last_id,name);
+				return error_flag = 3;//redeclared variable
+			}
+		}
                 for(int i = 0;i < tableCount;i++){
                         if(strcmp(name,table[i].Name)==0 && table[i].Scope == scope )
-                                return error_flag = 3;//redeclared variable
-                }
-		return error_flag = 0;
+                                {
+				strcpy(last_id,name);
+				return error_flag = 3;//redeclared variable
+				}
+		}
+		return error_flag = sema_flag;
 	}
 }
 void dump_symbol() {
