@@ -101,6 +101,9 @@ char last_id[512];
 %type <string> declarator
 %type <string> direct_declarator
 
+%type <string> primary_expression
+%type <string> postfix_expression
+
 /* Yacc will start at this nonterminal */
 %start program
 
@@ -113,8 +116,8 @@ program
 ;
 
 external_declaration
-    : function_definition { scope = 0;  printf("\nOMMMMMMMMMMMMMMMMMMMMMM");}
-    | declaration { scope = 0; printf("\nccccccccccccccccccccc");} 
+    : function_definition { scope = 0; /* printf("\nOMMMMMMMMMMMMMMMMMMMMMM");*/}
+    | declaration { scope = 0;/* printf("\nccccccccccccccccccccc");*/} 
 ;
 
 function_definition
@@ -282,7 +285,7 @@ declaration
 
 stat
     : print_stat{yysema(sema_flag);}
-    | expression_stat {printf("\nfunction\n");yysema(sema_flag);}
+    | expression_stat {yysema(sema_flag);}
     | selection_stat {yysema(sema_flag);}
     | iteration_stat {yysema(sema_flag);}
     | compound_stat {yysema(sema_flag);}
@@ -389,9 +392,9 @@ unary_operator
 	;
 
 postfix_expression
-    : primary_expression
+    : primary_expression {$$ = $1;}
     | postfix_expression LB RB
-    | postfix_expression LB argv_expression_list RB
+    | postfix_expression LB argv_expression_list RB {sema_flag=lookup_function(strdup($1),1);/*printf("functioni%s",$1);*/}
     | postfix_expression INC
     | postfix_expression DEC
 ;
@@ -403,7 +406,7 @@ argv_expression_list
 
 
 primary_expression
-    : ID {sema_flag = lookup_symbol(strdup(yytext),1); sema_flag=lookup_function(strdup(yytext),1);/*printf("USE VARIABLE%s",last_id);*/}
+    : ID {$$ = strdup(yytext);sema_flag = lookup_symbol(strdup(yytext),1);/*printf("USE VARIABLE%s",last_id);*/}
     | constant
     | TRUE
     | FALSE
