@@ -93,8 +93,8 @@ id			{letter}+({letter}|{digit})*
 "break"	    {CONCAT; printf("break");return BREAK; }
 
  /* String Constant */
-\"				        {CONCAT; printf("%s",yytext); BEGIN STRING_STATE; }
-<STRING_STATE>\"		{CONCAT; printf("%s",yytext); BEGIN INITIAL; }
+\"				        {CONCAT; printf("%s",yytext); BEGIN STRING_STATE; return COMMA;}
+<STRING_STATE>\"		{CONCAT; printf("%s",yytext); BEGIN INITIAL; return COMMA;}
 <STRING_STATE>[^"]*		{CONCAT; printf("%s",yytext); yylval.string=yytext; return STR_CONST; }
 
  /* Number Constant */

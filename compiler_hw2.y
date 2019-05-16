@@ -17,7 +17,7 @@ void insert_symbol();
 void dump_symbol();
 void dump_global();
 void test(char *type,char *name,int scope,char *kind,char *attribute);
-
+int yysema(int flag);
 
 typedef struct{
 	int Index;
@@ -37,7 +37,9 @@ int variableFlag = 1;
 
 char att[256][256] ;
 int functionCount = 0;
+int sema_flag;
 
+char *last_id;
 %}
 
 /* Use variable or self-defined structure to represent
@@ -129,6 +131,7 @@ declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
 		printf("declaDEFINE\n");
+	if(yysema(sema_flag))
 	if(variableFlag){
 		
 		//test($1,$2,scope,"variable","");
@@ -168,7 +171,7 @@ declarator
 	;
 
 direct_declarator
-	: ID { $$ = strdup(yytext); }
+	: ID { $$ = strdup(yytext); sema_flag=lookup_symbol(strdup(yytext),0);}
 	| LB declarator RB 
 	| direct_declarator HI parameter_list BYE {/*printf("function with NO attribute");*/}
 	| direct_declarator LB RB {/*printf("function with attribute");*/}
@@ -279,12 +282,12 @@ declaration
 	;
 
 stat
-    : print_stat
-    | expression_stat 
-    | selection_stat
-    | iteration_stat
-    | compound_stat
-    | jump_stat
+    : print_stat{yysema(sema_flag);}
+    | expression_stat {yysema(sema_flag);}
+    | selection_stat {yysema(sema_flag);}
+    | iteration_stat {yysema(sema_flag);}
+    | compound_stat {yysema(sema_flag);}
+    | jump_stat {yysema(sema_flag);}
    /* | function_stat*/
 ;
 /*expression_stat*/
@@ -293,10 +296,13 @@ stat
 
 /*print_func*/
 print_stat
-    :PRINT LB ID RB SEMICOLON
-    |PRINT LB STR_CONST RB SEMICOLON    
+    :PRINT LB USE RB SEMICOLON
+    |PRINT LB COMMA STR_CONST COMMA RB SEMICOLON    
 ;
 
+USE
+    : ID { sema_flag=lookup_symbol(strdup(yytext),1);}
+;
 expression_stat
     : COMMA
     | expression SEMICOLON
@@ -308,8 +314,8 @@ expression
 ;
 
 assignment_expression
-    : conditional_expression {printf("aa\n");}
-    | unary_expression assignment_operator assignment_expression {printf("bb\n");}
+    : conditional_expression {;}
+    | unary_expression assignment_operator assignment_expression {;}
 ;
 
 conditional_expression
@@ -398,11 +404,11 @@ argv_expression_list
 
 
 primary_expression
-    : ID {printf("USE VARIABLE");}
+    : ID { lookup_symbol(strdup(yytext),1);printf("USE VARIABLE");}
     | constant
     | TRUE
     | FALSE
-    | STR_CONST
+    | COMMA STR_CONST COMMA
     | LB expression RB
 ;
 
@@ -425,8 +431,6 @@ jump_stat
 	| RET SEMICOLON
 	| RET expression SEMICOLON
 	;
-function_stat
-    : ID LB function_para RB SEMICOLON
 
 function_para
     : function_para COMMA primary_expression
@@ -489,7 +493,31 @@ void insert_global(char *name,char *kind,char *type,int scope,char *attribute) {
 	functionCount++;
 }
 
-int lookup_symbol() {}
+int lookup_symbol(char *name,int use) {
+	int error_flag = 0;//right
+	last_id = strdup(name);
+	if(use){
+		for(int i = 0;i < functionCount;i++){
+			if(strcmp(name,global[i].Name)==0)
+				return error_flag = 0;
+		}
+		for(int i = 0;i < tableCount;i++){
+			if(strcmp(name,table[i].Name)==0)
+				return error_flag = 0;
+		}
+		return error_flag = 1;//undeclared variable
+	}else{
+		for(int i = 0;i < functionCount;i++){
+                        if(strcmp(name,global[i].Name)==0 && global[i].Scope == scope)
+                                return error_flag = 3;//redeclared variable
+                }
+                for(int i = 0;i < tableCount;i++){
+                        if(strcmp(name,table[i].Name)==0 && table[i].Scope == scope )
+                                return error_flag = 3;//redeclared variable
+                }
+		return error_flag = 0;
+	}
+}
 void dump_symbol() {
 
     for(int i = 0;i<tableCount;i++){
@@ -529,4 +557,30 @@ void dump_global() {
 
 void test(char *type,char *name,int scope,char *kind,char *attribute){
 	printf("\n%s   :   %s     %d  %s\n   ",type,name,scope,kind);
+}
+
+int yysema(int flag){
+	char error_message[512];
+	
+	if(flag==1)
+		strcpy(error_message,"Undeclared variable");
+	else if(flag == 2){
+		strcpy(error_message,"Undeclared function");
+	}else if(flag == 3){
+		strcpy(error_message,"Redeclared variable");
+	}else if(flag == 4){
+		strcpy(error_message,"Redeclared function");
+	}
+	strcat(error_message," ");
+	strcat(error_message,last_id);
+	memset(last_id,'\0',sizeof(last_id));
+	if(flag == 0)
+		return 1;
+	printf("\n|-----------------------------------------------|\n");
+	printf("| Error found in line %d: %s\n", yylineno, buf);
+	printf("| %s", error_message);
+	printf("\n|-----------------------------------------------|\n\n");
+	
+	sema_flag = 0;
+	return 0;
 }
