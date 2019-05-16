@@ -118,7 +118,11 @@ id			{letter}+({letter}|{digit})*
 
 [;]         {CONCAT; printf(";"); return SEMICOLON; }
 
-[\n]        {CONCAT; printf("\n%d: ",yylineno); memset(buf,'\0',sizeof(buf));}
+[\n]        {   
+		printf("\n%d: ",yylineno);
+		CONCAT;
+		memset(buf,'\0',sizeof(buf));
+	    }
 [ \t]		{CONCAT;printf("%s",yytext);} /* Ignore */
 [^ \t\n] 	{CONCAT;} /* Ignore other charactor sets */
 

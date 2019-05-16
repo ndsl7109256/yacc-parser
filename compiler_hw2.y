@@ -41,6 +41,7 @@ int functionCount = 0;
 int sema_flag;
 
 char last_id[512];
+int correct = 1;
 %}
 
 /* Use variable or self-defined structure to represent
@@ -116,8 +117,13 @@ program
 ;
 
 external_declaration
-    : function_definition { scope = 0; /* printf("\nOMMMMMMMMMMMMMMMMMMMMMM");*/}
-    | declaration { scope = 0;/* printf("\nccccccccccccccccccccc");*/} 
+    : function_definition { scope = 0;  /*printf("\nOMMMMMMMMMMMMMMMMMMMMMM");*/}
+    | declaration { scope = 0; printf("\nccccccccccccccccccccc");}
+;
+
+forward_para_list
+	: type_specifier ID
+	| forward_para_list COMMA type_specifier ID
 ;
 
 function_definition
@@ -138,10 +144,12 @@ declaration
 	if(yysema(sema_flag))
 	if(variableFlag){
 		
-		//test($1,$2,scope,"variable","");
-		if(scope == 0)
-			insert_global($2,"variable",$1,scope,att[functionCount]);
-		else
+		if(scope == 0){//want to declare a 
+			if(strlen(att[functionCount]) == 0)
+				insert_global($2,"variable",$1,scope,att[functionCount]);			    
+			else
+				memset(att[functionCount],'\0',sizeof(att[functionCount]));			
+		}else
 			insert_symbol($2,"variable",$1,scope,"");
 	}
 	else{
@@ -447,9 +455,10 @@ int main(int argc, char** argv)
     yylineno = 1;
     printf("1: ");
     yyparse();
-    printf("\nTotal lines: %d \n",yylineno);
-    dump_global();
-
+    if(correct){
+        dump_global();
+        printf("\nTotal lines: %d \n",yylineno-1);
+    }
 
 
 
@@ -471,6 +480,7 @@ void yyerror(char *s)
     printf("| Error found in line %d: %s\n", yylineno, buf);
     printf("| %s", s);
     printf("\n|-----------------------------------------------|\n\n");
+    correct = 0;
 }
 
 void create_symbol() {
@@ -560,8 +570,8 @@ void dump_symbol() {
     for(int i = 0;i<tableCount;i++){
         if(table[i].Scope == scope)
 	{
-        printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
-           "Index", "Name", "Kind", "Type", "Scope", "Attribute");
+        printf("\n\n%-10s%-10s%-12s%-10s%-10s%s\n\n",
+           "Index", "Name", "Kind", "Type", "Scope", "Attribute ");
     
         break;
 	}
@@ -570,7 +580,7 @@ void dump_symbol() {
     for(int i = 0;i<tableCount;i++)
     {
 	    if(table[i].Scope == scope){
-                printf("%-10d%-10s%-12s%-10s%-10d%-10s\n",
+                printf("%-10d%-10s%-12s%-10s%-10d%s\n",
                 to_decrease,table[i].Name,table[i].Kind,table[i].Type, table[i].Scope,"");
 	        memset(&(table[i]),'\0',sizeof(table[i]));
 	        ++to_decrease;
@@ -582,13 +592,14 @@ void dump_symbol() {
 
 void dump_global() {
     printf("\n%-10s%-10s%-12s%-10s%-10s%-10s\n\n",
-           "Index", "Name", "Kind", "Type", "Scope", "Attribute");
+           "Index", "Name", "Kind", "Type", "Scope", "Attribute ");
 	for(int i = 0;i<functionCount;i++)
 	{		
-	    printf("%-10d%-10s%-12s%-10s%-10d%-10s\n",
+	    printf("%-10d%-10s%-12s%-10s%-10d%s\n",
            i,global[i].Name,global[i].Kind,global[i].Type, global[i].Scope, global[i].Attribute);
 
 	}
+    printf("\n");
 }
 
 
@@ -613,10 +624,10 @@ int yysema(int flag){
 	memset(last_id,'\0',sizeof(last_id));
 	if(flag == 0)
 		return 1;
-	printf("\n|-----------------------------------------------|\n");
+	printf("\n\n|-----------------------------------------------|\n");
 	printf("| Error found in line %d: %s\n", yylineno, buf);
 	printf("| %s", error_message);
-	printf("\n|-----------------------------------------------|\n\n");
+	printf("\n|-----------------------------------------------|\n");
 	
 	sema_flag = 0;
 	return 0;
