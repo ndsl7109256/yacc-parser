@@ -140,8 +140,8 @@ function_definition
 declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
-		/*printf("declaDEFINE\n");*/
-	if(yysema(sema_flag))
+		printf("declaDEFINE\n");
+	if(yysema(sema_flag))//redelared or not
 	if(variableFlag){
 		
 		if(scope == 0){//want to declare a 
@@ -191,7 +191,16 @@ direct_declarator
 	;
 
 HI
-	:LB {variableFlag = 0;++scope;/*printf("hi");*/}
+	:LB {variableFlag = 0;++scope;// additionally delete unreal table
+		int to_decrease = 0;
+	for(int i = 0;i<tableCount;i++)	{
+		if(table[i].Scope == scope){
+			memset(&(table[i]),'\0',sizeof(table[i]));
+			++to_decrease;
+		}
+	}
+	tableCount = tableCount - to_decrease;
+	/*printf("hi");*/}
 ;
 
 BYE
@@ -623,12 +632,12 @@ int yysema(int flag){
 	strcat(error_message,last_id);
 	memset(last_id,'\0',sizeof(last_id));
 	if(flag == 0)
-		return 1;
+		return 1;//correct
 	printf("\n\n|-----------------------------------------------|\n");
 	printf("| Error found in line %d: %s\n", yylineno, buf);
 	printf("| %s", error_message);
 	printf("\n|-----------------------------------------------|\n");
 	
 	sema_flag = 0;
-	return 0;
+	return 0;//fault
 }
