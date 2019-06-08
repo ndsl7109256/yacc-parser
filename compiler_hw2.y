@@ -102,6 +102,7 @@ int correct = 1;
 %type <string> declarator
 %type <string> direct_declarator
 
+%type <string> function_declarator
 %type <string> primary_expression
 %type <string> postfix_expression
 
@@ -118,7 +119,7 @@ program
 
 external_declaration
     : function_definition { scope = 0;  /*printf("\nOMMMMMMMMMMMMMMMMMMMMMM");*/}
-    | declaration { scope = 0; printf("\nccccccccccccccccccccc");}
+    | declaration { scope = 0; /*printf("\nccccccccccccccccccccc");*/}
 ;
 
 forward_para_list
@@ -128,11 +129,12 @@ forward_para_list
 
 function_definition
 	: declaration_specifiers declarator declaration_list compound_stat	
-	| declaration_specifiers declarator compound_stat	{
-	
+	| declaration_specifiers function_declarator compound_stat	{
+	yysema(sema_flag);	
 	insert_global($2,"function",$1,scope,att[functionCount]);
 	
 	/*"function end"*/;}
+	| declaration_specifiers function_declarator SEMICOLON
     	| declarator declaration_list compound_stat
 	| declarator compound_stat
 ;
@@ -140,9 +142,9 @@ function_definition
 declaration
 	: declaration_specifiers SEMICOLON
 	| declaration_specifiers init_declarator_list SEMICOLON {
-		printf("declaDEFINE\n");
-	if(yysema(sema_flag))//redelared or not
-	if(variableFlag){
+		/*printf("declaDEFINE\n");*/
+			if(yysema(sema_flag))//redelared or not
+					if(variableFlag){
 		
 		if(scope == 0){//want to declare a 
 			if(strlen(att[functionCount]) == 0)
@@ -185,9 +187,12 @@ declarator
 direct_declarator
 	: ID { $$ = strdup(yytext); sema_flag=lookup_symbol(strdup(yytext),0);}
 	| LB declarator RB 
-	| direct_declarator HI parameter_list BYE {/*printf("function with NO attribute");*/}
-	| direct_declarator LB RB {/*printf("function with attribute");*/}
 	| direct_declarator LB identifier_list RB 
+	;
+
+function_declarator
+	: direct_declarator HI parameter_list BYE {printf("function with attribute");}
+    | direct_declarator LB RB {printf("function with NO attribute");}
 	;
 
 HI
@@ -485,7 +490,7 @@ int main(int argc, char** argv)
 void yyerror(char *s)
 {
     yysema(sema_flag);
-    printf("\n|-----------------------------------------------|\n");
+    printf("\n\n|-----------------------------------------------|\n");
     printf("| Error found in line %d: %s\n", yylineno, buf);
     printf("| %s", s);
     printf("\n|-----------------------------------------------|\n\n");
